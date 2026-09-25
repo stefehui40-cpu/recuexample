@@ -74,6 +74,6 @@ if('serviceWorker' in navigator){
     registration.update().catch(()=>{});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{});});
     return navigator.serviceWorker.ready;
-  }).then(()=>{$('offline').textContent='Disponible hors connexion · v6';}).catch(()=>{$('offline').textContent='Connexion requise · v6';});
+  }).then(()=>{$('offline').textContent='Disponible hors connexion · v9';}).catch(()=>{$('offline').textContent='Connexion requise · v9';});
 }
 updateSummary();

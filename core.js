@@ -3,8 +3,8 @@ export const CASHIERS = ['AKA OI AKA LAURENT','KOFFI FRANCOISE AMLAN'];
 export const RATES = {1:30000,2:20000,3:10000};
 export function parseIdentity(text) {
   const match=text.trim().replace(/\s+/g,' ').match(/^(.+?)\s+(\d{1,24})\s+CAT\s*([123])\s+(\d{1,2})\s*(?:ans?)?\s+(\d{1,24})$/iu);
-  if(!match) throw Error('Respectez cet ordre : nom et prénom, numéro de reçu, CAT1/2/3, âge, ISN.');
-  const [,name,receipt,category,age,isn]=match;
+  if(!match) throw Error('Respectez cet ordre : nom et prénom, ISN, CAT1/2/3, âge, numéro de reçu.');
+  const [,name,isn,category,age,receipt]=match;
   if(+age<12||+age>70) throw Error('L’âge doit être compris entre 12 et 70 ans.');
   return {name:name.toLocaleUpperCase('fr'),receipt,category:+category,age:+age,isn};
 }

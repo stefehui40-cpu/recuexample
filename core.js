@@ -1,12 +1,18 @@
 export const REGISTRARS = ['ALLEGBE ARDON RUBEN BORIS JOSE','BOH KANGRO','AGRE OHIE JEAN FERLUS','KOUAME AFFOUE SABINE','KPAZAI ROCK FELLER'];
 export const CASHIERS = ['AKA OI AKA LAURENT','KOFFI FRANCOISE AMLAN'];
 export const RATES = {1:30000,2:20000,3:10000};
-export function parseIdentity(text) {
-  const match=text.trim().replace(/\s+/g,' ').match(/^(.+?)\s+(\d{1,24})\s+CAT\s*([123])\s+(\d{1,2})\s*(?:ans?)?\s+(\d{1,24})$/iu);
+export function parseIdentity(text,now=new Date()) {
+  const match=text.trim().replace(/\s+/g,' ').match(/^(.+?)\s+(\d{1,24})\s+CAT\s*([123])\s+(?:du\s+(\d{1,2})\s+au\s+(\d{1,2})\s+)?(\d{1,2})\s*(?:ans?)?\s+(\d{1,24})$/iu);
   if(!match) throw Error('Respectez cet ordre : nom et prénom, ISN, CAT1/2/3, âge, numéro de reçu.');
-  const [,name,isn,category,age,receipt]=match;
+  const [,name,isn,category,entryDay,exitDay,age,receipt]=match;
   if(+age<12||+age>70) throw Error('L’âge doit être compris entre 12 et 70 ans.');
-  return {name:name.toLocaleUpperCase('fr'),receipt,category:+category,age:+age,isn};
+  let period;
+  if(entryDay){
+    const [,month,year]=timestamp(now).date.split('/');
+    period={start:`${year}-${month}-${entryDay.padStart(2,'0')}`,end:`${year}-${month}-${exitDay.padStart(2,'0')}`};
+    stayDays(period.start,period.end);
+  }
+  return {name:name.toLocaleUpperCase('fr'),receipt,category:+category,age:+age,isn,...(period?{period}:{})};
 }
 export function dayNumber(value) {
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw Error('Renseignez les deux dates d’hospitalisation.');
@@ -34,12 +40,3 @@ export function timestamp(date) {
 export function receiptData(input,now=new Date()) {
   const name=String(input.name||'').trim().toLocaleUpperCase('fr'), receipt=String(input.receipt||'').trim(),isn=String(input.isn||'').trim();
   if(!name||name.length>90) throw Error('Indiquez un nom de 1 à 90 caractères.');
-  if(!/^\d{1,24}$/.test(receipt)||!/^\d{1,24}$/.test(isn)) throw Error('Le numéro de reçu et l’ISN doivent contenir de 1 à 24 chiffres.');
-  const age=Number(input.age),category=Number(input.category);
-  if(!Number.isInteger(age)||age<12||age>70||!RATES[category]) throw Error('Vérifiez l’âge et la catégorie.');
-  if(!['F','M'].includes(input.sex)) throw Error('Choisissez le sexe.');
-  for(const key of ['registrar','cashier']) if(!String(input[key]||'').trim()||input[key].trim().length>70) throw Error('Renseignez les deux agents (70 caractères maximum).');
-  const days=stayDays(input.start,input.end),unit=RATES[category],total=days*unit;
-  if(!Number.isSafeInteger(total)||total>999999999) throw Error('Vérifiez la durée d’hospitalisation.');
-  return {...input,name,receipt,isn,age,category,days,unit,total,registrar:input.registrar.trim().toLocaleUpperCase('fr'),cashier:input.cashier.trim().toLocaleUpperCase('fr'),issued:timestamp(now),paid:timestamp(new Date(now.getTime()-40000))};
-}

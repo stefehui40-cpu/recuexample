@@ -4,13 +4,22 @@ const $=id=>document.getElementById(id),form=$('receipt-form');
 let file=null,pdfUrl=null;
 for(let age=12;age<=70;age++) $('age').add(new Option(`${age} ans`,age));
 for(const [id,names] of [['registrar',REGISTRARS],['cashier',CASHIERS]]) {
-  for(const name of names) $(`${id}-choice`).add(new Option(name,name));
-  $(`${id}-choice`).add(new Option('Autre nom…','custom'));
-  $(`${id}-choice`).addEventListener('change',()=>{
-    const v=$(`${id}-choice`).value;$(id).value=v==='custom'?'':v;
-    $(`${id}-picker`).open=false;$(id).focus();
-  });
-  $(id).addEventListener('input',()=>{$(`${id}-choice`).value=names.includes($(id).value)?$(id).value:'custom';});
+  for(const name of [...names,'Autre nom…']) {
+    const button=document.createElement('button');button.type='button';button.className='secondary wide';button.textContent=name;
+    button.addEventListener('click',()=>{$(id).value=name==='Autre nom…'?'':name;$(`${id}-picker`).open=false;$(id).focus();});
+    $(`${id}-choice`).append(button);
+  }
+}
+let autoPeriod='';
+function syncInlinePeriod(){
+  let data;try{data=identity();}catch{}
+  if(data?.period){
+    $('start').value=data.period.start;$('end').value=data.period.end;
+    autoPeriod=`${dateLabel(data.period.start)} au ${dateLabel(data.period.end)}`;$('period').value=autoPeriod;
+  }else if(autoPeriod){
+    if($('period').value===autoPeriod){$('period').value='';$('start').value='';$('end').value='';}
+    autoPeriod='';
+  }
 }
 function fail(error) {$('error').textContent=error.message||String(error);$('error').hidden=false;}
 function identity(){const data=parseIdentity($('quick').value);if($('age').value)data.age=Number($('age').value);return data;}
@@ -27,7 +36,7 @@ for(const id of ['start','end']) $(id).addEventListener('input',()=>{
   updateSummary();
 });
 $('period').addEventListener('input',()=>{try{const p=parsePeriod($('period').value);$('start').value=p.start;$('end').value=p.end;}catch{}});
-$('quick').addEventListener('input',()=>{$('age').value='';});
+$('quick').addEventListener('input',()=>{$('age').value='';syncInlinePeriod();});
 form.addEventListener('input',updateSummary);form.addEventListener('change',updateSummary);
 function discard(){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=null;file=null;$('result').hidden=true;$('download').removeAttribute('href');$('open-pdf').removeAttribute('href');$('result-label').textContent='';}
 form.addEventListener('submit',async event=>{
@@ -40,7 +49,7 @@ form.addEventListener('submit',async event=>{
     $('download').href=pdfUrl;$('download').download=file.name;$('open-pdf').href=pdfUrl;
     $('result-label').textContent=`Reçu ${data.receipt} · ${amount(data.total)} FCFA · 2 exemplaires`;
     $('share-status').textContent='';$('result').hidden=false;
-    form.reset();for(const details of form.querySelectorAll('details'))details.open=false;updateSummary();
+    form.reset();autoPeriod='';for(const details of form.querySelectorAll('details'))details.open=false;updateSummary();
     $('result').scrollIntoView({behavior:'smooth',block:'center'});$('result').focus({preventScroll:true});
   }catch(error){fail(error);$('error').scrollIntoView({behavior:'smooth',block:'center'});}
   finally{$('generate').disabled=false;$('generate').innerHTML='Générer le reçu PDF <span aria-hidden="true">↗</span>';}

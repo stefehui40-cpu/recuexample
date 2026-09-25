@@ -1,0 +1,28 @@
+import {createRequire} from 'node:module';import fs from 'node:fs';
+const require=createRequire(import.meta.url);
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})});
+const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:4173');await page.waitForFunction(()=>document.getElementById('age').options.length===60);
+if(await page.locator('textarea:visible').count()!==4)throw Error('Exactly four text zones required');
+await page.screenshot({path:'test-results/mobile.png',fullPage:true});
+await page.locator('#quick').fill('KONE SALI 08354290926 CAT2 33ans 456283902');
+await page.locator('#period').fill('20/09/2026 au 23/09/2026');
+await page.locator('#registrar').fill('KOUAME AFFOUE SABINE');await page.locator('#cashier').fill('AKA OI AKA LAURENT');
+await page.locator('#generate').click();
+await page.waitForFunction(()=>!document.getElementById('result').hidden||!document.getElementById('error').hidden,{timeout:30000});
+const error=await page.locator('#error').textContent();if(await page.locator('#error').isVisible())throw Error(error);
+const pdf=await page.evaluate(async()=>Array.from(new Uint8Array(await (await fetch(document.getElementById('download').href)).arrayBuffer())));
+fs.writeFileSync('test-results/Exemple_CAT2.pdf',Buffer.from(pdf));
+if(await page.locator('#quick').inputValue()!=='')throw Error('Form not cleared');
+await page.screenshot({path:'test-results/mobile-result.png',fullPage:true});
+await page.waitForFunction(()=>document.getElementById('offline').textContent.includes('Disponible'));
+await context.setOffline(true);await page.reload();await page.waitForFunction(()=>document.getElementById('age').options.length===60);
+await page.locator('#quick').fill('TEST HORS LIGNE 0000123 CAT3 70 0000456');await page.locator('#period').fill('20/09/2026 au 23/09/2026');await page.locator('#registrar').fill('AGENT MANUEL');await page.locator('#cashier').fill('CAISSIER MANUEL');await page.locator('#generate').click();
+await page.waitForFunction(()=>!document.getElementById('result').hidden||!document.getElementById('error').hidden,{timeout:30000});
+if(await page.locator('#error').isVisible())throw Error(await page.locator('#error').textContent());
+await context.setOffline(false);await page.setViewportSize({width:1280,height:960});await page.reload();await page.screenshot({path:'test-results/desktop.png',fullPage:true});
+if(errors.length)throw Error(errors.join('\n'));
+console.log('PASS: mobile generation, correct fields reset, offline reload and PDF, desktop.');await browser.close();
+

@@ -1,0 +1,10 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {parseIdentity,parsePeriod,stayDays,receiptData} from './core.js';
+const input={...parseIdentity('KONE SALI 08354290926 CAT2 33ans 456283902'),sex:'F',start:'2026-09-20',end:'2026-09-23',registrar:'KOUAME AFFOUE SABINE',cashier:'AKA OI AKA LAURENT'};
+test('Exemple demandé : 3 jours CAT2, 60 000 FCFA, zéro initial intact',()=>{const d=receiptData(input,new Date('2026-09-24T00:00:20Z'));assert.equal(d.receipt,'08354290926');assert.equal(d.total,60000);assert.equal(d.days,3);assert.equal(d.unit,20000);assert.deepEqual(d.paid,{date:'23/09/2026',time:'23:59:40',short:'23/09/2026 23:59'});});
+test('CAT1 et CAT3',()=>{assert.equal(receiptData({...input,category:1}).total,90000);assert.equal(receiptData({...input,category:3}).total,30000);});
+test('Noms composés, espaces, casse et âge sans suffixe',()=>{const d=parseIdentity('  N’GUESSAN ANNE-MARIE 0012 cat 3 70 00045 ');assert.equal(d.name,'N’GUESSAN ANNE-MARIE');assert.equal(d.isn,'00045');assert.equal(d.age,70);});
+test('Rejet des âges et formats invalides',()=>{for(const x of ['KONE 12 CAT2 11ans 34','KONE 12 CAT2 71ans 34','KONE 12 CAT4 30ans 34','KONE CAT2 30 34'])assert.throws(()=>parseIdentity(x));});
+test('Dates bissextiles, inversées, même jour et changement de mois',()=>{assert.equal(stayDays('2024-02-28','2024-03-01'),2);assert.equal(stayDays('2026-09-30','2026-10-02'),2);for(const d of ['2026-02-29','2026-09-19','2026-09-20'])assert.throws(()=>stayDays('2026-09-20',d));});
+test('Période collée',()=>assert.deepEqual(parsePeriod('20/09/2026 au 23/09/2026'),{start:'2026-09-20',end:'2026-09-23'}));
+test('Agents manuels obligatoires et chiffres exclusivement pour identifiants',()=>{assert.throws(()=>receiptData({...input,registrar:''}));assert.throws(()=>receiptData({...input,isn:'12e3'}));});

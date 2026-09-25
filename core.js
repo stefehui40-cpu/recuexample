@@ -40,3 +40,12 @@ export function timestamp(date) {
 export function receiptData(input,now=new Date()) {
   const name=String(input.name||'').trim().toLocaleUpperCase('fr'), receipt=String(input.receipt||'').trim(),isn=String(input.isn||'').trim();
   if(!name||name.length>90) throw Error('Indiquez un nom de 1 à 90 caractères.');
+  if(!/^\d{1,24}$/.test(receipt)||!/^\d{1,24}$/.test(isn)) throw Error('Le numéro de reçu et l’ISN doivent contenir de 1 à 24 chiffres.');
+  const age=Number(input.age),category=Number(input.category);
+  if(!Number.isInteger(age)||age<12||age>70||!RATES[category]) throw Error('Vérifiez l’âge et la catégorie.');
+  if(!['F','M'].includes(input.sex)) throw Error('Choisissez le sexe.');
+  for(const key of ['registrar','cashier']) if(!String(input[key]||'').trim()||input[key].trim().length>70) throw Error('Renseignez les deux agents (70 caractères maximum).');
+  const days=stayDays(input.start,input.end),unit=RATES[category],total=days*unit;
+  if(!Number.isSafeInteger(total)||total>999999999) throw Error('Vérifiez la durée d’hospitalisation.');
+  return {...input,name,receipt,isn,age,category,days,unit,total,registrar:input.registrar.trim().toLocaleUpperCase('fr'),cashier:input.cashier.trim().toLocaleUpperCase('fr'),issued:timestamp(now),paid:timestamp(new Date(now.getTime()-40000))};
+}

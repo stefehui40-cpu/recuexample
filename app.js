@@ -64,6 +64,16 @@ $('discard').addEventListener('click',discard);
 window.addEventListener('pagehide',()=>{form.reset();discard();});
 window.addEventListener('pageshow',()=>updateSummary());
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register(new URL('./sw.js',import.meta.url)).then(()=>navigator.serviceWorker.ready).then(()=>{$('offline').textContent='Disponible hors connexion';}).catch(()=>{$('offline').textContent='Connexion requise';});
+  let reloading=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    const hasInput=['quick','period','registrar'].some(id=>$(id).value.trim())||$('cashier').value!==$('cashier').defaultValue||file;
+    if(hasInput){$('offline').textContent='Mise à jour prête : actualisez après votre reçu';return;}
+    if(!reloading){reloading=true;location.reload();}
+  });
+  navigator.serviceWorker.register(new URL('./sw.js',import.meta.url),{updateViaCache:'none'}).then(registration=>{
+    registration.update().catch(()=>{});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{});});
+    return navigator.serviceWorker.ready;
+  }).then(()=>{$('offline').textContent='Disponible hors connexion · v6';}).catch(()=>{$('offline').textContent='Connexion requise · v6';});
 }
 updateSummary();

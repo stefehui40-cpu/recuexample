@@ -42,9 +42,9 @@ export async function generatePdf(data) {
     text(data.cashier,387.9,info+40.6,8.925,190);
     text(`HOSPITALISATION GYNECOLOGIE CAT ${data.category}/ GOP. du ${dateLabel(data.start)} au`,92,table+39,7.995,260);
     text(dateLabel(data.end),92,table+51,7.995,260);
-    text(`${amount(data.unit)} XOF`,364,table+45,7.995,48);
+    text(`${amount(data.unit)} FCFA`,364,table+45,7.995,48);
     text(data.days,431,table+45,7.995,13);
-    text(`${amount(data.total)} XOF`,512,table+45,7.995,64);
+    text(`${amount(data.total)} FCFA`,512,table+45,7.995,64);
   }
   doc.setTitle(`Reçu ${data.receipt}`);doc.setCreator('Reçus · Gynécologie');
   doc.setCreationDate(new Date());doc.setModificationDate(new Date());

@@ -16,6 +16,23 @@ export async function generatePdf(data) {
   const font=await doc.embedFont(fontBytes,{subset:true}), image=await doc.embedPng(background),page=doc.addPage([595,842]);
   page.drawImage(image,{x:0,y:0,width:595,height:842});
   const black=rgb(0,0,0),slate=rgb(76/255,89/255,107/255);
+  const metrics=globalThis.fontkit.create(fontBytes),numberCap=metrics.glyphForCodePoint(78).bbox;
+  function receiptNumber(value,dy) {
+    const label=`N° ${value}`,size=Math.min(8.715,8.715*162/font.widthOfTextAtSize(label,8.715));
+    if(size<6.4) throw Error('Le numéro est trop long pour le modèle.');
+    let x=316;
+    const y=842-52-dy;
+    for(const ch of label) {
+      // Align actual digit outlines to N, including round-glyph overshoot.
+      const box=metrics.glyphForCodePoint(ch.codePointAt(0)).bbox;
+      const scale=/[0-9]/.test(ch)?(numberCap.maxY-numberCap.minY)/(box.maxY-box.minY):1;
+      const offset=/[0-9]/.test(ch)?(numberCap.minY-box.minY*scale)*size/metrics.unitsPerEm:0;
+      page.pushOperators(globalThis.PDFLib.pushGraphicsState(),globalThis.PDFLib.concatTransformationMatrix(1,0,0,scale,0,y*(1-scale)+offset));
+      page.drawText(ch,{x,y,size,font,color:slate});
+      page.pushOperators(globalThis.PDFLib.popGraphicsState());
+      x+=font.widthOfTextAtSize(ch,size);
+    }
+  }
   function text(value,x,baseline,size=8.925,maxWidth=Infinity,color=black) {
     value=String(value);
     for(const ch of value) if(!font.getCharacterSet().includes(ch.codePointAt(0))) throw Error(`Le caractère « ${ch} » n’est pas pris en charge dans le reçu.`);
@@ -36,7 +53,7 @@ export async function generatePdf(data) {
     page.drawText('¸',{x:335.9,y:802.95-dy,size:9.2,font,color:black});
     // Move the complete number line down to clear the title's cedilla.
     page.drawRectangle({x:315,y:842-50-dy,width:12,height:9,color:rgb(1,1,1)});
-    text(`N° ${data.receipt}`,316,52+dy,8.715,162,slate);drawQr(24.4+dy);
+    receiptNumber(data.receipt,dy);drawQr(24.4+dy);
     const lines=[`Mode de paiement : Espèces`,`Date de paiement : ${data.paid.date} , ${data.paid.time}`,`Date d’émission ${data.issued.date} , ${data.issued.time}`,`Montant total : ${amount(data.total)} FCFA`,`Montant reçu : ${amount(data.total)} FCFA`,`Monnaie : 0 FCFA`];
     lines.forEach((line,i)=>text(line,316,106+i*15+dy,8.925,235,slate));
     text(data.name,99.2,info+12,8.925,208);

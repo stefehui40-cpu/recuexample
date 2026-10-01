@@ -17,7 +17,6 @@ function syncInlinePeriod(){
     $('start').value=data.period.start;$('end').value=data.period.end;
     autoPeriod=`${dateLabel(data.period.start)} au ${dateLabel(data.period.end)}`;$('period').value=autoPeriod;
   }else if(autoPeriod){
-    if($('period').value===autoPeriod){$('period').value='';$('start').value='';$('end').value='';}
     autoPeriod='';
   }
 }
@@ -74,6 +73,6 @@ if('serviceWorker' in navigator){
     registration.update().catch(()=>{});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)registration.update().catch(()=>{});});
     return navigator.serviceWorker.ready;
-  }).then(()=>{$('offline').textContent='Disponible hors connexion · v12';}).catch(()=>{$('offline').textContent='Connexion requise · v12';});
+  }).then(()=>{$('offline').textContent='Disponible hors connexion · v13';}).catch(()=>{$('offline').textContent='Connexion requise · v13';});
 }
 updateSummary();

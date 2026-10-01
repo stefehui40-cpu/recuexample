@@ -10,4 +10,20 @@ test('Période collée',()=>assert.deepEqual(parsePeriod('20/09/2026 au 23/09/20
 test('Agents manuels obligatoires et chiffres exclusivement pour identifiants',()=>{assert.throws(()=>receiptData({...input,registrar:''}));assert.throws(()=>receiptData({...input,isn:'12e3'}));});
 
 test('Période intégrée au mois courant à Abidjan',()=>{const d=parseIdentity('KONE FRANCINE 83899393999 cat 3 du 20 au 23 43ans 848499595',new Date('2026-09-25T12:00:00Z'));assert.equal(d.name,'KONE FRANCINE');assert.equal(d.isn,'83899393999');assert.equal(d.receipt,'848499595');assert.equal(d.age,43);assert.deepEqual(d.period,{start:'2026-09-20',end:'2026-09-23'});assert.equal(receiptData({...input,...d,...d.period}).total,30000);});
-test('Mois courant dynamique et jours valides',()=>{const parse=(range,now)=>parseIdentity(`TEST 001 CAT2 du ${range} 33ans 002`,new Date(now));assert.deepEqual(parse('1 au 3','2027-01-01T00:00:00Z').period,{start:'2027-01-01',end:'2027-01-03'});assert.throws(()=>parse('28 au 29','2027-02-10T12:00:00Z'));assert.throws(()=>parse('23 au 20','2026-09-25T12:00:00Z'));assert.throws(()=>parse('20 au 20','2026-09-25T12:00:00Z'));assert.deepEqual(parse('28 au 29','2028-02-10T12:00:00Z').period,{start:'2028-02-28',end:'2028-02-29'});});
+test('Mois courant dynamique et jours valides',()=>{const parse=(range,now)=>parseIdentity(`TEST 001 CAT2 du ${range} 33ans 002`,new Date(now));assert.deepEqual(parse('1 au 3','2027-01-01T00:00:00Z').period,{start:'2027-01-01',end:'2027-01-03'});assert.throws(()=>parse('28 au 29','2027-02-10T12:00:00Z'));assert.deepEqual(parse('23 au 20','2026-09-25T12:00:00Z').period,{start:'2026-08-23',end:'2026-09-20'});assert.throws(()=>parse('20 au 20','2026-09-25T12:00:00Z'));assert.deepEqual(parse('28 au 29','2028-02-10T12:00:00Z').period,{start:'2028-02-28',end:'2028-02-29'});});
+
+test('Passage du mois précédent au mois courant, année et février',()=>{
+ const parse=(range,now)=>parseIdentity(`TEST 001 CAT3 du ${range} 43ans 002`,new Date(now)).period;
+ assert.deepEqual(parse('29 au 01','2026-10-01T00:00:00Z'),{start:'2026-09-29',end:'2026-10-01'});
+ assert.deepEqual(parse('29 au 01','2027-01-01T00:00:00Z'),{start:'2026-12-29',end:'2027-01-01'});
+ assert.deepEqual(parse('29 au 01','2028-03-01T00:00:00Z'),{start:'2028-02-29',end:'2028-03-01'});
+ assert.throws(()=>parse('29 au 01','2027-03-01T00:00:00Z'));
+ assert.throws(()=>parse('31 au 01','2026-10-01T00:00:00Z'));
+ const p=parse('29 au 01','2026-10-01T00:00:00Z');assert.equal(stayDays(p.start,p.end),2);
+});
+test('Sans dates abrégées, utiliser la période renseignée',()=>{
+ const identity=parseIdentity('TEST 001 CAT3 43ans 002',new Date('2026-10-01T00:00:00Z'));
+ assert.equal(identity.period,undefined);
+ const d=receiptData({...input,...identity,...parsePeriod('29/09/2026 au 01/10/2026')});
+ assert.equal(d.days,2);assert.equal(d.total,20000);
+});

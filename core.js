@@ -9,7 +9,9 @@ export function parseIdentity(text,now=new Date()) {
   let period;
   if(entryDay){
     const [,month,year]=timestamp(now).date.split('/');
-    period={start:`${year}-${month}-${entryDay.padStart(2,'0')}`,end:`${year}-${month}-${exitDay.padStart(2,'0')}`};
+    const entryMonth=new Date(Date.UTC(+year,+month-1-(+entryDay>+exitDay?1:0),1));
+    const entryPrefix=`${entryMonth.getUTCFullYear()}-${String(entryMonth.getUTCMonth()+1).padStart(2,'0')}`;
+    period={start:`${entryPrefix}-${entryDay.padStart(2,'0')}`,end:`${year}-${month}-${exitDay.padStart(2,'0')}`};
     stayDays(period.start,period.end);
   }
   return {name:name.toLocaleUpperCase('fr'),receipt,category:+category,age:+age,isn,...(period?{period}:{})};
